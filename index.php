@@ -1,13 +1,11 @@
 <?php
-	
+
 ob_start();
 session_start();
 
-require_once('helpers/view.php');
-require_once('helpers/dd.php');
-require_once('routes.php');
-// require_once('config/database.php');
-// Database::connect();
+require_once 'helpers/view.php';
+require_once 'helpers/var-dumper/dd.php';
+require_once 'routes/web.php';
 
 // Nhận đường dẫn từ URL
 $url = $_GET['url'] ?? '';
@@ -19,58 +17,61 @@ $method = '';
 $params = [];
 
 foreach (Route::$routes as $key => $route) {
-	$param = [];
-	$arr_url_route = explode('/', trim($route['url'], '/\\'));
+    $arr_url_route = explode('/', trim($route['url'], '/\\'));
 
-	if ($arr_url_route === $arr_url) {
-		$controller = $route['controller'];
-		$action = $route['action'];
-		$method = $route['method'];
-		break;
-	}
+    // 2 mảng route_url và url bằng nhau tuyệt đối => route cần tìm => break
+    if ($arr_url_route === $arr_url) {
+        $controller = $route['controller'];
+        $action = $route['action'];
+        $method = $route['method'];
+        break;
+    }
 
-	// route có độ dài khác với độ dài url truyền vào hoặc có độ dài < 2 (khi nhỏ hơn 2 thì cần phải có so sánh tuyệt đối)=> duyệt route khác
-	$length = count($arr_url_route);
-	if (($length !== count($arr_url)) || $length < 2) {
-		continue;
-	}
+    // mảng route_url có độ dài khác với độ dài mảng url hoặc có độ dài < 2 (khi nhỏ hơn 2 thì cần phải có so sánh tuyệt đối)
+    $lengthRoute = count($arr_url_route);
+    if (($lengthRoute !== count($arr_url)) || $lengthRoute < 2) {
+        continue;
+    }
 
-	for ($i = 0; $i < $length; $i++) {
-		if ($arr_url_route[$i][0] === '{' && $arr_url_route[$i][-1] === '}') {
-			$param[] = $arr_url[$i];
-		}
-	}
+    $param = []; // các biến được định nghĩa trong route_url
+    $dem = 0; // tổng các phần tử giống nheu theo vị trí của 2 mảng url và route_url
+    for ($i = 0; $i < $lengthRoute; $i++) {
+        if ($arr_url_route[$i][0] === '{' && $arr_url_route[$i][-1] === '}') {
+            $param[] = $arr_url[$i];
+        }
 
-	// tổng số phần tử trùng nhau + tổng biến truyền vào từ route = đô dài mảng route => khả năng cao
-	if (count(array_intersect($arr_url_route, $arr_url)) + count($param) === $length) {
-		$params = $param;
-		$controller = $route['controller'];
-		$action = $route['action'];
-		$method = $route['method'];
-		// chưa thể break, vì có thể tìm đc route chính xác hơn
-	}
-	$param = [];
+        if ($arr_url_route[$i] === $arr_url[$i]) {
+            $dem++;
+        }
+    }
+
+    // số phần tử giống nhau theo vị trí + param = độ dài của 1 mảng url => có khả năng cao là url đúng
+    if ($dem + count($param) === $lengthRoute) {
+        // param càng ít thì route càng đúng => param của route lớn hơn => loại
+        if ((count($params) > count($param)) || count($params) === 0) {
+            $params = $param;
+            $controller = $route['controller'];
+            $action = $route['action'];
+            $method = $route['method'];
+            // chưa thể break, vì có thể tìm đc route chính xác hơn
+        }
+    }
 }
 
 if (empty($controller)) {
-	die('ERROR: Không tồn tại URL');
+    die('ERROR: Không tồn tại URL');
 }
 
-$fileName = 'controllers/' . ucfirst($controller) . '.php';
+$fileName = 'app/Controllers/' . ucfirst($controller) . '.php';
 if (!file_exists($fileName)) {
-	die("ERROR: Không tồn tại file {$controller}");
+    die("ERROR: Không tồn tại file <b>{$controller}</b>");
 }
 
-include($fileName);
-$className = ucfirst($controller);
-$object = new $className;
+require_once "$fileName";
+$object = new $controller;
 
 if (!method_exists($object, $action)) {
-	die("ERROR: Không tồn tại action {$action}");
+    die("ERROR: Không tồn tại action <b>{$action}</b>");
 }
 
-if (!empty($params)) {
-	call_user_func_array([$object, "$action"], $params); // truyền count($param) param vào phương thức $action của đối tượng $object
-} else {
-	$object->$action();
-}
+call_user_func_array([$object, "$action"], $params); // truyền tất cả params vào phương thức $action của đối tượng $object
