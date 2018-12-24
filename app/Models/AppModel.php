@@ -31,6 +31,11 @@ class AppModel {
 
         $class = static::class;
         $obj = new $class();
+
+        if (empty($result)) {
+            return null;
+        }
+        
         foreach ($result as $key => $value) {
             $obj->$key = $value;
         }
@@ -60,7 +65,7 @@ class AppModel {
         $valuesQuery = rtrim($valuesQuery, ', ');
 
         $stmt = $conn->prepare("INSERT INTO {$table} ({$fieldsQuery}) VALUES ({$valuesQuery})");
-        foreach ($request as $key => $value) {
+        foreach ($request as $key => &$value) {
             $stmt->bindParam(":{$key}", $value);
         }
         $stmt->execute();
@@ -97,5 +102,19 @@ class AppModel {
 
         $conn = null;
         return $isUpdate;
+    }
+
+    public function delete()
+    {
+        $table = strtolower(static::class) . 's';
+        $conn = Database::connect();
+
+        $stmt = $conn->prepare("DELETE FROM {$table} WHERE id = :id");
+        $stmt->bindParam(":id", $this->id);
+        $stmt->execute();
+        $isDelete = $stmt->rowCount() && true;
+
+        $conn = null;
+        return $isDelete;
     }
 }

@@ -19,19 +19,35 @@ class UserController
 
     public function create()
     {
-        $arr = [
-            'username' => 'user1',
-            'email'    => 'user1@gmail.com',
-            'password' => '123456',
-            'a'        => 'a',
-        ];
-        $user = User::create($arr);
-        return view('user.add', compact('user'));
+        return view('user.add');
+    }
+
+    public function store()
+    {
+        $request = new Request();
+
+        foreach ($request->all() as $value) {
+            if (empty($value)) {
+                return view('error.validate');
+            }
+        }
+
+        $user = User::create($request->only(['username', 'password', 'email']));
+        dd($user);
     }
 
     public function update($id)
     {
         User::find($id)->update(['username' => 'update_user', 'password' => '123456789']);
         return view('user.add', ['user' => 'ok']);
+    }
+
+    public function destroy($id)
+    {
+        $user = User::find($id);
+        if (!empty($user)) {
+            $user->delete();
+        }
+        header('location:/ProjectOOP/user');
     }
 }

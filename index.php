@@ -5,6 +5,7 @@ session_start();
 
 require_once 'helpers/view.php';
 require_once 'helpers/var-dumper/dd.php';
+require_once 'helpers/request.php';
 require_once 'routes/web.php';
 
 // Nhận đường dẫn từ URL
@@ -18,6 +19,11 @@ $params = [];
 
 foreach (Route::$routes as $key => $route) {
     $arr_url_route = explode('/', trim($route['url'], '/\\'));
+
+    // method http khác với method của route => bỏ qua
+    if ($route['method'] !== request()) {
+        continue;
+    }
 
     // 2 mảng route_url và url bằng nhau tuyệt đối => route cần tìm => break
     if ($arr_url_route === $arr_url) {

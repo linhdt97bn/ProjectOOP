@@ -15,4 +15,10 @@ class Route
         [$controller, $action] = explode('@', $route);
         self::$routes[] = ['url' => $url, 'controller' => $controller, 'action' => $action, 'method' => 'POST'];
     }
+
+    public static function delete($url, $route)
+    {
+        [$controller, $action] = explode('@', $route);
+        self::$routes[] = ['url' => $url, 'controller' => $controller, 'action' => $action, 'method' => 'DELETE'];
+    }
 }
